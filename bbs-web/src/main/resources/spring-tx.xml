@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:cache="http://www.springframework.org/schema/cache"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache-4.3.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+
+	<!-- 配置事务 -->
+	<!--Spring启动加载所有spring的配置文件都能自动找到 -->
+	<!--1、配置事务管理器 -->
+	<bean id="tm"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"></property>
+	</bean>
+
+	<!--2、配置事务切面 -->
+	<aop:config>
+		<aop:pointcut expression="execution(* com.atguigu.bbs.manager.service.*.*(..))"
+			id="txPoint" />
+		<!--事务增强 -->
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="txPoint" />
+	</aop:config>
+
+	<!--3、配置事务增强 -->
+	<tx:advice id="txAdvice" transaction-manager="tm">
+		<!--事务属性 -->
+		<tx:attributes>
+			<tx:method name="*" />
+			<tx:method name="get*" propagation="SUPPORTS" read-only="true" />
+			<tx:method name="save*" propagation="REQUIRES_NEW" />
+			<tx:method name="alter*" propagation="REQUIRES_NEW" />
+		</tx:attributes>
+	</tx:advice>
+
+	<!-- 基于Spring缓存抽象的二级缓存配置 -->
+	<bean id="ehCacheManagerFactoryBean"
+		class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean">
+		<property name="configLocation" value="classpath:ehcache.xml" />
+	</bean>
+
+	<!-- EHCache的缓存管理器 -->
+	<bean id="ehCacheCacheManager" class="org.springframework.cache.ehcache.EhCacheCacheManager">
+		<property name="cacheManager" ref="ehCacheManagerFactoryBean" />
+	</bean>
+
+	<!-- 配置缓存切面相关 -->
+	<aop:config>
+		<!-- 配置缓存切面的切入点表达式 -->
+		<aop:pointcut
+			expression="execution(* com.atguigu.bbs.service.CacheService.*(..))"
+			id="cachePointcut" />
+
+		<!-- 将缓存切入点表达式和缓存通知关联起来 -->
+		<aop:advisor advice-ref="cacheAdvice" pointcut-ref="cachePointcut"
+			order="1" />
+
+	</aop:config>
+
+	<!-- 配置自定义键生成器 -->
+	<bean id="myCacheKeyGenerator" class="com.atguigu.bbs.manager.cache.MyCacheKeyGenerator" />
+
+	<!-- 配置缓存通知 -->
+	<!-- 装配缓存管理器 -->
+	<!-- 装配键生成器 -->
+	<cache:advice id="cacheAdvice" cache-manager="ehCacheCacheManager"
+		key-generator="myCacheKeyGenerator">
+
+		<!-- 指定具体的缓存区域 -->
+		<cache:caching cache="myCache">
+			<cache:cacheable method="getEmployeeList" />
+		</cache:caching>
+
+		<!-- 配置存在清空操作的缓存区域 -->
+		<cache:caching cache="myEvictableCache">
+			<cache:cacheable method="getDepartmentList" />
+
+			<!-- 执行alterDepartment方法时清空缓存区域 -->
+			<cache:cache-evict method="alterDepartment"
+				all-entries="true" />
+		</cache:caching>
+	</cache:advice>
+
+</beans>

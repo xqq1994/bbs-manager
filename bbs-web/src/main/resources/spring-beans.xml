@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd">
+
+	<!-- 负责包扫描，配置组件等 -->
+	<!--1、spring不扫描控制器 -->
+	<context:component-scan base-package="com.atguigu.bbs.manager">
+		<context:exclude-filter type="annotation"
+			expression="org.springframework.stereotype.Controller" />
+	</context:component-scan>
+	
+	<context:property-placeholder location="classpath:jdbc.properties"/>
+
+	<!--2、数据库 -->
+	<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+		<property name="username" value="root"></property>
+		<property name="password" value="root"></property>
+		<property name="url" value="jdbc:mysql://localhost:3306/test"></property>
+		<property name="driverClassName" value="com.mysql.jdbc.Driver"></property>
+		<property name="initialSize" value="5"></property>
+	</bean>
+
+	<!-- 文件上传模块 -->
+	<bean
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<property name="defaultEncoding" value="utf-8"></property>
+		<property name="maxUploadSize" value="#{1024*1024}"></property>
+	</bean>
+
+<!-- 	
+	配置一个抽象的模板bean，另外两个bean继承，以抽取重复信息
+	<bean id="templateDatasource" abstract="true" class="com.alibaba.druid.pool.DruidDataSource">
+		<property name="username" value="${jdbc.user}" />
+		<property name="password" value="${jdbc.password}" />
+		<property name="driverClassName" value="${jdbc.driver}" />
+	</bean>
+	具体数据源
+	<bean id="datasourceUser" parent="templateDatasource">
+		<property name="url" value="${jdbc.url.user}" />
+	</bean>
+	具体数据源
+	<bean id="datasourceLog" parent="templateDatasource">
+		<property name="url" value="${jdbc.url.log}" />
+	</bean>
+	路由器数据源
+	<bean id="myRouter" class="com.atguigu.bbs.manager.router.MyRouter">
+		以键值对形式管理多个数据源
+		<property name="targetDataSources">
+			<map>
+				<entry key="DATASOURCE_USER" value-ref="datasourceUser" />
+				<entry key="DATASOURCE_LOG" value-ref="datasourceLog" />
+			</map>
+		</property>
+		配置默认数据源
+		<property name="defaultTargetDataSource" ref="datasourceUser" />
+
+	</bean>
+ -->
+</beans>
